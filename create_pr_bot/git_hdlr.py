@@ -3,6 +3,7 @@ Git Handler module for PR creation bot.
 This module provides functionality for common git operations.
 """
 
+import logging
 import re
 from typing import Any, Dict, Optional
 
@@ -55,6 +56,8 @@ class GitHandler:
                     f"Cannot get the git branch '{branch_name}' from repository head list '{[h.name for h in self.repo.heads]}'."
                 )
             branch = branches[0]
+            logging.debug(f"branch: {branch}")
+            logging.debug(f"type of branch: {type(branch)}")
             commit = branch.commit
 
             return {

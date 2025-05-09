@@ -147,27 +147,6 @@ class ProjectManagementToolSettings:
             username=pm_config.get("username"),
         )
 
-    def to_config_dict(self) -> Dict[str, Any]:
-        """Convert settings to configuration dictionary."""
-        config = {}
-
-        if self.api_key:
-            config["api_key"] = self.api_key
-
-        if self.organization_id:
-            config["organization_id"] = self.organization_id
-
-        if self.project_id:
-            config["project_id"] = self.project_id
-
-        if self.base_url:
-            config["base_url"] = self.base_url
-
-        if self.username:
-            config["username"] = self.username
-
-        return config
-
 
 @dataclass
 class AISettings:

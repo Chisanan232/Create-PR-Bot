@@ -16,7 +16,7 @@ from create_pr_bot.model import BotSettings, find_default_config_path
 from create_pr_bot.project_management_tool import ProjectManagementToolType
 
 # Configure logging
-init_logger_config()
+init_logger_config(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -69,7 +69,7 @@ def run_bot(settings: BotSettings) -> None:
         logger.info("Initializing Create PR Bot...")
 
         # Create project management tool config
-        pm_tool_config = settings.pm_tool.to_config_dict() if settings.pm_tool.tool_type else None
+        pm_tool_config = settings.pm_tool if settings.pm_tool.tool_type else None
 
         # Initialize the bot
         bot = CreatePrAIBot(

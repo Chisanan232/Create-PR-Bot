@@ -4,6 +4,7 @@ CreatePrAIBot - A bot that helps developers create pull requests with AI-generat
 
 import logging
 import re
+import traceback
 from typing import Any, Dict, List, Optional, Tuple
 
 from github.PullRequest import PullRequest
@@ -16,6 +17,7 @@ from .ai_bot.gpt.client import GPTClient
 from .ai_bot.prompts.model import prepare_pr_prompt_data
 from .git_hdlr import GitCodeConflictError, GitHandler
 from .github_opt import GitHubOperations
+from .model import ProjectManagementToolSettings
 from .project_management_tool import ProjectManagementToolType
 from .project_management_tool._base.client import BaseProjectManagementAPIClient
 from .project_management_tool._base.model import BaseImmutableModel
@@ -47,7 +49,7 @@ class CreatePrAIBot:
         github_token: Optional[str] = None,
         github_repo: Optional[str] = None,
         project_management_tool_type: Optional[ProjectManagementToolType] = None,
-        project_management_tool_config: Optional[Dict[str, Any]] = None,
+        project_management_tool_config: Optional[ProjectManagementToolSettings] = None,
         ai_client_type: AiModuleClient = AI_CLIENT_GPT,
         ai_client_api_key: Optional[str] = None,
     ):
@@ -85,7 +87,7 @@ class CreatePrAIBot:
         self.ai_client = self._initialize_ai_client(ai_client_type, ai_client_api_key)
 
     def _initialize_project_management_client(
-        self, tool_type: ProjectManagementToolType, config: Dict[str, Any]
+        self, tool_type: ProjectManagementToolType, config: ProjectManagementToolSettings
     ) -> Optional[BaseProjectManagementAPIClient]:
         """
         Initialize the project management client based on the specified type.
@@ -101,15 +103,15 @@ class CreatePrAIBot:
             ValueError: If the tool type is not supported or required config is missing
         """
         if tool_type == self.PM_TOOL_CLICKUP:
-            if "api_token" not in config:
+            if not config.api_key:
                 raise ValueError("ClickUp API token is required")
-            return ClickUpAPIClient(api_token=config["api_token"])
+            return ClickUpAPIClient(api_token=config.api_key)
         elif tool_type == self.PM_TOOL_JIRA:
-            required_keys = ["base_url", "email", "api_token"]
+            required_keys = ["base_url", "username", "api_key"]
             for key in required_keys:
-                if key not in config:
+                if getattr(config, key) is None:
                     raise ValueError(f"Jira {key} is required")
-            return JiraAPIClient(base_url=config["base_url"], email=config["email"], api_token=config["api_token"])
+            return JiraAPIClient(base_url=config.base_url, email=config.username, api_token=config.api_key)
         else:
             raise ValueError(f"Unsupported project management tool type: {tool_type}")
 
@@ -215,6 +217,9 @@ class CreatePrAIBot:
 
         Returns:
             List of commit details
+
+        Raises:
+            ValueError: If the feature branch or base branch cannot be found
         """
         if not branch_name:
             branch_name = self._get_current_branch()
@@ -223,7 +228,41 @@ class CreatePrAIBot:
         repo = self.git_handler.repo
 
         try:
-            merge_base = repo.merge_base(f"refs/heads/{branch_name}", f"refs/heads/{self.base_branch}")
+            # Check if branches exist using repo.refs
+            refs = {ref.name: ref for ref in repo.refs}
+
+            # Try different possible reference formats
+            feature_ref_options = [
+                branch_name,
+                f"refs/heads/{branch_name}",
+                f"origin/{branch_name}",
+                f"refs/remotes/origin/{branch_name}",
+            ]
+
+            base_ref_options = [
+                self.base_branch,
+                f"refs/heads/{self.base_branch}",
+                f"origin/{self.base_branch}",
+                f"refs/remotes/origin/{self.base_branch}",
+            ]
+
+            # Find valid references using filter
+            feature_branch_ref = next(filter(lambda ref: ref in refs, feature_ref_options), None)
+            base_branch_ref = next(filter(lambda ref: ref in refs, base_ref_options), None)
+
+            # If we couldn't find valid references, raise an error
+            if not feature_branch_ref:
+                error_msg = f"Feature branch '{branch_name}' not found. Available references: {list(refs.keys())}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            if not base_branch_ref:
+                error_msg = f"Base branch '{self.base_branch}' not found. Available references: {list(refs.keys())}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            # Get the merge base between the branches
+            merge_base = repo.merge_base(feature_branch_ref, base_branch_ref)
             if not merge_base:
                 return []
 
@@ -250,8 +289,12 @@ class CreatePrAIBot:
                 )
 
             return commits
+        except ValueError:
+            # Re-raise ValueError exceptions (our custom errors)
+            raise
         except Exception as e:
             logger.error(f"Error getting branch commits: {str(e)}")
+            traceback.print_exc()
             return []
 
     def extract_ticket_ids(self, commits: List[Dict[str, Any]]) -> List[str]:

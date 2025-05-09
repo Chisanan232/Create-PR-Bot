@@ -216,30 +216,6 @@ class TestProjectManagementToolSettings:
                 assert settings.tool_type is None
                 mock_warning.assert_called_once()
 
-    def test_to_config_dict_empty(self):
-        """Test converting empty settings to config dict."""
-        settings = ProjectManagementToolSettings()
-        config = settings.to_config_dict()
-        assert config == {}
-
-    def test_to_config_dict_with_values(self):
-        """Test converting settings with values to config dict."""
-        settings = ProjectManagementToolSettings(
-            tool_type=ProjectManagementToolType.CLICKUP,
-            api_key="test-api-key",
-            organization_id="test-org-id",
-            project_id="test-project-id",
-            base_url="https://example.com",
-            username="test-user",
-        )
-
-        config = settings.to_config_dict()
-        assert config["api_key"] == "test-api-key"
-        assert config["organization_id"] == "test-org-id"
-        assert config["project_id"] == "test-project-id"
-        assert config["base_url"] == "https://example.com"
-        assert config["username"] == "test-user"
-
     def test_serialize_empty(self):
         """Test loading settings from an empty dictionary."""
         settings = ProjectManagementToolSettings.serialize({})

@@ -43,7 +43,7 @@ Changelog = "https://chisanan232.github.io/Create-PR-Bot/latest/release_note/"
 "Project Management" = "https://app.clickup.com/9018752317/v/f/90184463981/90182761188"
 
 [project.scripts]
-#create-pr-bot = "create_pr_bot.runner:run"
+create-pr-bot = "create_pr_bot.__main__:main"
 
 #[tool.poetry.group.dev]
 #optional = true

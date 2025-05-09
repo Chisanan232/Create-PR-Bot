@@ -1,0 +1,73 @@
+name: E2E test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+#     For source code
+      - "create_pr_bot/**/*.py"
+      - "!**/__pkg_info__.py"
+#     For config
+      - "action.yaml"
+      - "Dockerfile"
+#     End-to-End test
+      - ".github/workflows/action-e2e-test.yaml"
+
+jobs:
+  test-action:
+    name: Test Create PR Bot Action
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Setup test environment
+      - name: Set up test branch
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          echo "Test git branch: $TEST_BRANCH"
+          git checkout -b $TEST_BRANCH
+          echo "# Test Change" >> README.md
+          git add README.md
+          git commit -m "Test change for PR Bot"
+          git push origin $TEST_BRANCH
+        env:
+          TEST_BRANCH: test-pr-bot-action
+
+      # Create test configuration
+      - name: Create test configuration
+        run: |
+          mkdir -p .github
+          cat > .github/pr-creator.yaml << EOF
+          git:
+            base_branch: ${{ github.base_ref }}
+          github:
+            repo: ${{ github.repository }}
+          ai:
+            client_type: gpt
+          project_management_tool:
+            type: clickup
+            api_key: ${{ secrets.PM_TOOL_API_KEY }}
+          EOF
+
+      # Run the action
+      - name: Run Create PR Bot Action
+        uses: ./
+        with:
+          branch-name: ${{ env.TEST_BRANCH }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ai-api-key: ${{ secrets.AI_API_KEY }}
+          pm-tool-api-key: ${{ secrets.PM_TOOL_API_KEY }}
+
+      # Cleanup test branch regardless of success or failure
+      - name: Cleanup test branch
+        if: always()
+        run: |
+          git push origin --delete $TEST_BRANCH || true

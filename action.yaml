@@ -1,0 +1,74 @@
+name: "Create PR Bot"
+description: "🤖 Automate pull request creation with AI-generated content"
+author: "Bryant, Liu"
+
+inputs:
+  config-path:
+    description: "Path to configuration file (default: .github/pr-creator.yaml or .github/pr-creator.yml in the repository)"
+    required: false
+  repo-path:
+    description: "Path to the git repository (default: current directory)"
+    required: false
+    default: "."
+  base-branch:
+    description: "Name of the base branch to compare against (default: main)"
+    required: false
+    default: "master"
+  branch-name:
+    description: "Name of the branch to create PR from (default: current branch)"
+    required: false
+  github-token:
+    description: "GitHub access token for API access"
+    required: true
+  github-repo:
+    description: "GitHub repository name in format 'owner/repo'"
+    required: false
+  ai-client-type:
+    description: "Type of AI client to use (gpt, claude, gemini)"
+    required: false
+    default: "claude"
+  ai-api-key:
+    description: "API key for the AI service"
+    required: true
+  pm-tool-type:
+    description: "Type of project management tool to use (jira, clickup)"
+    required: false
+    default: "clickup"
+  pm-tool-api-key:
+    description: "API key for the project management tool"
+    required: false
+  pm-tool-organization-id:
+    description: "Organization ID for the project management tool"
+    required: false
+  pm-tool-project-id:
+    description: "Project ID for the project management tool"
+    required: false
+  pm-tool-base-url:
+    description: "Base URL for the project management tool"
+    required: false
+  pm-tool-username:
+    description: "Username for the project management tool"
+    required: false
+
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  env:
+    CREATE_PR_BOT_CONFIG_FILE: ${{ inputs.config-path }}
+    CREATE_PR_BOT_GIT_REPO_PATH: ${{ inputs.repo-path }}
+    CREATE_PR_BOT_GIT_BASE_BRANCH: ${{ inputs.base-branch }}
+    CREATE_PR_BOT_GIT_BRANCH_NAME: ${{ inputs.branch-name }}
+    CREATE_PR_BOT_GITHUB_TOKEN: ${{ inputs.github-token }}
+    CREATE_PR_BOT_GITHUB_REPO: ${{ inputs.github-repo }}
+    CREATE_PR_BOT_AI_CLIENT_TYPE: ${{ inputs.ai-client-type }}
+    CREATE_PR_BOT_AI_API_KEY: ${{ inputs.ai-api-key }}
+    CREATE_PR_BOT_PM_TOOL_TYPE: ${{ inputs.pm-tool-type }}
+    CREATE_PR_BOT_PM_TOOL_API_KEY: ${{ inputs.pm-tool-api-key }}
+    CREATE_PR_BOT_PM_TOOL_ORGANIZATION_ID: ${{ inputs.pm-tool-organization-id }}
+    CREATE_PR_BOT_PM_TOOL_PROJECT_ID: ${{ inputs.pm-tool-project-id }}
+    CREATE_PR_BOT_PM_TOOL_BASE_URL: ${{ inputs.pm-tool-base-url }}
+    CREATE_PR_BOT_PM_TOOL_USERNAME: ${{ inputs.pm-tool-username }}
+
+branding:
+  icon: 'git-pull-request'
+  color: 'blue'

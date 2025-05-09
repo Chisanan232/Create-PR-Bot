@@ -13,6 +13,7 @@ from create_pr_bot.ai_bot.gpt.client import GPTClient
 from create_pr_bot.bot import CreatePrAIBot
 from create_pr_bot.git_hdlr import GitCodeConflictError, GitHandler
 from create_pr_bot.github_opt import GitHubOperations
+from create_pr_bot.model import ProjectManagementToolSettings
 from create_pr_bot.project_management_tool import ProjectManagementToolType
 from create_pr_bot.project_management_tool._base.model import BaseImmutableModel
 from create_pr_bot.project_management_tool.clickup.client import ClickUpAPIClient
@@ -271,6 +272,16 @@ class TestCreatePrAIBot:
         mock_base_commit = MagicMock()
         mock_base_commit.hexsha = "base123"
 
+        # Setup refs
+        mock_feature_ref = MagicMock()
+        mock_feature_ref.name = "test-branch"
+
+        mock_base_ref = MagicMock()
+        mock_base_ref.name = "main"
+
+        # Set up repo.refs
+        mock_repo.refs = [mock_feature_ref, mock_base_ref]
+
         # Setup merge_base
         mock_repo.merge_base.return_value = [mock_base_commit]
 
@@ -281,7 +292,7 @@ class TestCreatePrAIBot:
         commits = bot.get_branch_commits("test-branch")
 
         # Verify calls
-        mock_repo.merge_base.assert_called_once_with("refs/heads/test-branch", "refs/heads/main")
+        mock_repo.merge_base.assert_called_once_with("test-branch", "main")
         mock_repo.iter_commits.assert_called_once_with("test-branch")
 
         # Verify returned commits (should exclude base commit)
@@ -292,10 +303,57 @@ class TestCreatePrAIBot:
     def test_get_branch_commits_no_commits(self, bot, mock_git_handler):
         """Test get_branch_commits method with no commits."""
         mock_repo = mock_git_handler.repo
+
+        # Setup refs
+        mock_feature_ref = MagicMock()
+        mock_feature_ref.name = "test-branch"
+
+        mock_base_ref = MagicMock()
+        mock_base_ref.name = "main"
+
+        # Set up repo.refs
+        mock_repo.refs = [mock_feature_ref, mock_base_ref]
+
         mock_repo.merge_base.return_value = []
 
         commits = bot.get_branch_commits("test-branch")
+
+        # Verify merge_base was called with the correct arguments
+        mock_repo.merge_base.assert_called_once_with("test-branch", "main")
+
         assert commits == []
+
+    def test_get_branch_commits_feature_branch_not_found(self, bot, mock_git_handler):
+        """Test get_branch_commits method when feature branch doesn't exist."""
+        mock_repo = mock_git_handler.repo
+
+        # Setup refs with only base branch
+        mock_base_ref = MagicMock()
+        mock_base_ref.name = "main"
+        mock_repo.refs = [mock_base_ref]
+
+        # Expect ValueError to be raised
+        with pytest.raises(ValueError) as excinfo:
+            bot.get_branch_commits("test-branch")
+
+        # Verify error message contains branch name
+        assert "Feature branch 'test-branch' not found" in str(excinfo.value)
+
+    def test_get_branch_commits_base_branch_not_found(self, bot, mock_git_handler):
+        """Test get_branch_commits method when base branch doesn't exist."""
+        mock_repo = mock_git_handler.repo
+
+        # Setup refs with only feature branch
+        mock_feature_ref = MagicMock()
+        mock_feature_ref.name = "test-branch"
+        mock_repo.refs = [mock_feature_ref]
+
+        # Expect ValueError to be raised
+        with pytest.raises(ValueError) as excinfo:
+            bot.get_branch_commits("test-branch")
+
+        # Verify error message contains branch name
+        assert "Base branch 'main' not found" in str(excinfo.value)
 
     def test_extract_ticket_ids(self, bot):
         """Test extract_ticket_ids method."""
@@ -652,18 +710,16 @@ class TestCreatePrAIBot:
     def test_initialize_project_management_client_clickup(self):
         """Test initialization of ClickUp project management client."""
         with patch("create_pr_bot.bot.ClickUpAPIClient") as mock_clickup_client:
-            config = {"api_token": "mock-api-token"}
+            config = ProjectManagementToolSettings(api_key="mock-api-token")
             client = SpyBot()._initialize_project_management_client(ProjectManagementToolType.CLICKUP, config)
             mock_clickup_client.assert_called_once_with(api_token="mock-api-token")
 
     def test_initialize_project_management_client_jira(self):
         """Test initialization of Jira project management client."""
         with patch("create_pr_bot.bot.JiraAPIClient") as mock_jira_client:
-            config = {
-                "base_url": "https://example.atlassian.net",
-                "email": "test@example.com",
-                "api_token": "mock-api-token",
-            }
+            config = ProjectManagementToolSettings(
+                base_url="https://example.atlassian.net", username="test@example.com", api_key="mock-api-token"
+            )
             client = SpyBot()._initialize_project_management_client(ProjectManagementToolType.JIRA, config)
             mock_jira_client.assert_called_once_with(
                 base_url="https://example.atlassian.net", email="test@example.com", api_token="mock-api-token"
@@ -672,14 +728,23 @@ class TestCreatePrAIBot:
     @pytest.mark.parametrize(
         ("service_type", "config"),
         [
-            (ProjectManagementToolType.CLICKUP, {}),
-            (ProjectManagementToolType.JIRA, {"email": "test@example.com", "api_token": "mock-token"}),
-            (ProjectManagementToolType.JIRA, {"base_url": "example.com", "api_token": "mock-token"}),
-            (ProjectManagementToolType.JIRA, {"base_url": "example.com", "email": "test@example.com"}),
+            (ProjectManagementToolType.CLICKUP, ProjectManagementToolSettings()),
+            (
+                ProjectManagementToolType.JIRA,
+                ProjectManagementToolSettings(username="test@example.com", api_key="mock-token"),
+            ),
+            (
+                ProjectManagementToolType.JIRA,
+                ProjectManagementToolSettings(base_url="example.com", api_key="mock-token"),
+            ),
+            (
+                ProjectManagementToolType.JIRA,
+                ProjectManagementToolSettings(base_url="example.com", username="test@example.com"),
+            ),
         ],
     )
     def test_initialize_project_management_client_missing_config(
-        self, service_type: ProjectManagementToolType, config: Dict[str, str]
+        self, service_type: ProjectManagementToolType, config: ProjectManagementToolSettings
     ):
         # Test Jira with missing base_url
         with pytest.raises(ValueError, match="is required"):

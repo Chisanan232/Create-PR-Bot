@@ -1,0 +1,92 @@
+================ create =======================
+------------------ one prompt start ------------------
+Please help me to configure a customized action for GitHub Action CI platform to run.
+1. Please refer to the GitHub official document about customizing action in GitHub Action.
+2. The below points are the core logic about the action.
+3. Please also generate the end-to-end test for the customized action. If it has any side effects, please also reset
+   them after the test is done, no metter the test is pass or fail.
+4. About the customized action, please put the configuration details in the file *action.yaml*.
+5. About the docker setting, please put the configuration details in the file *Dockerfile*.
+
+The development point is:
+1. About customized action for GitHub Action:
+    1-1. Configure the customized action as Docker container actions.
+    1-2. Please pass the action input parameters to command line arguments by environment variables in action.
+2. About the Docker file
+    1-1. Please use the latest stable Python version, maybe 3.12 or 3.13 version to build the runtime environment in
+         container.
+    1-2. Please also help me to configure Dockerfile about running the program by command line with each option.
+    1-3. All the command line options should be passed by environment variables via docker.
+    1-4. Could support amounting the configuration into docker container to run program with the settings.
+------------------ one prompt end ------------------
+
+================ bug fix =======================
+------------------ one prompt start ------------------
+In the Dockerfile *.github/actions/create-pr-bot/Dockerfile*, please use the correct command line options which be
+defined in entry point source code *create_pr_bot/__main__.py* to set the mapping environment variables which be set in
+customized action configuration *.github/actions/create-pr-bot/action.yaml*.
+------------------ one prompt end ------------------
+
+------------------ one prompt start ------------------
+Does the function *CreatePrAIBot.get_branch_commits* have any bug? It seems like I cannot use it to get the different
+branch commits from the base branch. Can you help me debug and fix the bug? And please also adjust the test if it does
+any breaking change. Don't forget, the runtime environment is using *Poetry* to manage the project. And if you want to
+ run all entire tests, please use the shell script *scripts/run_all_tests.sh* to run all the test.
+------------------ one prompt end ------------------
+
+------------------ one prompt start ------------------
+I don't think so. In exactly, the code cannot run finely in real. It cannot get the different commits and raise an error
+like below:
+```shell
+2025-05-04 02:27:37 UTC+0000 [   DEBUG] (git.cmd - execute at 1253): Popen(['git', 'merge-base', 'refs/heads/test-pr-bot-action', 'refs/heads/master'], cwd=/github/workspace, stdin=None, shell=False, universal_newlines=False)
+2025-05-04 02:27:37 UTC+0000 [   ERROR] (create_pr_bot.bot - get_branch_commits at 256): Error getting branch commits: Cmd('git') failed due to: exit code(128)
+  cmdline: git merge-base refs/heads/test-pr-bot-action refs/heads/master
+  stderr: 'fatal: Not a valid object name refs/heads/master'
+Traceback (most recent call last):
+  File "/app/create_pr_bot/bot.py", line 228, in get_branch_commits
+    merge_base = repo.merge_base(f"refs/heads/{branch_name}", f"refs/heads/{self.base_branch}")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/git/repo/base.py", line 818, in merge_base
+    lines: List[str] = self.git.merge_base(*rev, **kwargs).splitlines()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/git/cmd.py", line 986, in <lambda>
+    return lambda *args, **kwargs: self._call_process(name, *args, **kwargs)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/git/cmd.py", line 1599, in _call_process
+    return self.execute(call, **exec_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/git/cmd.py", line 1389, in execute
+    raise GitCommandError(redacted_command, status, stderr_value, stdout_value)
+git.exc.GitCommandError: Cmd('git') failed due to: exit code(128)
+  cmdline: git merge-base refs/heads/test-pr-bot-action refs/heads/master
+  stderr: 'fatal: Not a valid object name refs/heads/master'
+```
+How do you think? Does it really work?
+------------------ one prompt end ------------------
+
+------------------ one prompt start ------------------
+Is it possible to use *git.Repo.refs* to check the git branch exists or not?
+------------------ one prompt end ------------------
+
+------------------ one prompt start ------------------
+About the implementation like below:
+```python
+feature_branch_ref = None
+for ref_option in feature_ref_options:
+    if ref_option in refs:
+        feature_branch_ref = ref_option
+        break
+```
+Could you change to use *filter* to implement it to be more clear?
+------------------ one prompt end ------------------
+
+------------------ one prompt start ------------------
+If it cannot find the feature branch or base branch, I think it should throw an error instead of return None.
+------------------ one prompt end ------------------
+
+================ improvement (or refactoring) =======================
+------------------ one prompt start ------------------
+The Dockerfile feature has been merged to file *Dockerfile* in the root directory of this project. Could you help me
+extract the shell script part about setting command line options and call the program entry point into a single shell
+script file and save it into directory *scripts/docker* and named *entrypoint.sh*?
+------------------ one prompt end ------------------

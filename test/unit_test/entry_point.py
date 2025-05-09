@@ -79,7 +79,6 @@ class TestRunBot:
         mock_settings.ai.client_type = AiModuleClient.GPT
         mock_settings.ai.api_key = "test-ai-key"
         mock_settings.pm_tool.tool_type = ProjectManagementToolType.CLICKUP
-        mock_settings.pm_tool.to_config_dict.return_value = {"api_key": "test-pm-key"}
 
         # Create mock bot and PR result
         mock_bot = MagicMock()
@@ -98,7 +97,7 @@ class TestRunBot:
                     github_token="test-token",
                     github_repo="owner/repo",
                     project_management_tool_type=ProjectManagementToolType.CLICKUP,
-                    project_management_tool_config={"api_key": "test-pm-key"},
+                    project_management_tool_config=mock_settings.pm_tool,
                     ai_client_type=AiModuleClient.GPT,
                     ai_client_api_key="test-ai-key",
                 )
