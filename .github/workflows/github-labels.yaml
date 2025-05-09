@@ -1,0 +1,23 @@
+name: Sync labels
+on:
+  push:
+    branches:
+      - master
+      - "develop/**"    # For testing
+    paths:
+      - ".github/labels.yaml"
+      - ".github/workflows/github-labels.yaml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+
+      - name: Sync labels details
+        uses: Chisanan232/Just-Some-Tools/github-label-management@master
+        with:
+          operations: sync_upstream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

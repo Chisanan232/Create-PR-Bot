@@ -1,0 +1,83 @@
+repositories:
+   - Chisanan232/Create-PR-Bot
+delete_unused: true
+labels:
+  "⚠️ bad PR":
+    color: FBCA04
+    description: The code change or effect scope is too big, or PR brief is too hard
+      to read and review, etc
+  dependencies:
+    color: C5DEF5
+    description: ''
+  duplicate:
+    color: cfd3d7
+    description: This issue or pull request already exists
+  good first issue:
+    color: 7057ff
+    description: Good for newcomers
+  help wanted:
+    color: '008672'
+    description: Extra attention is needed
+  invalid:
+    color: e4e669
+    description: This doesn't seem right
+  question:
+    color: d876e3
+    description: Further information is requested
+  wontfix:
+    color: ffffff
+    description: This will not be worked on
+  "✨ new feature":
+    color: 0E8A16
+    description: New feature in project
+  "🍀 improvement":
+    color: 74BF50
+    description: Improve something to be more clear, readable, maintainable, etc.
+  "🐍 python":
+    color: 0E8A16
+    description: ''
+  "🐍🍻 release":
+    color: 0E8A16
+    description: Release the new version of package
+  "👁 should-enhance":
+    color: D93F0B
+    description: has something needs to enhance but implement it in other PRs
+  "👨‍💻 wip":
+    color: FEF2C0
+    description: ''
+  "👨‍🔧 breaking change":
+    color: F9D0C4
+    description: Some changes which would let some old usage be changed.
+  "📑 documentation":
+    color: 0075ca
+    description: Improvements or additions to documentation
+  "🔍 enhancement":
+    color: a2eeef
+    description: New feature or request
+  "🔥 merge to release":
+    color: FBCA04
+    description: Merge features or changes to release (pre-release)
+  "😵 deprecate":
+    color: F9D0C4
+    description: Just mark the code as being deprecated, but won't remove it.
+  "🚮 remove":
+    color: E99695
+    description: Remove the code which would not be used anymore.
+  "🛠 bug fix":
+    color: 0E8A16
+    description: Fix any bug or issue
+  "🤖 ci/cd":
+    color: 1D76DB
+    description: Anything modification relative with CI/CD processes.
+  "🤖 e2e test":
+    color: FBCA04
+    description: This label be created by e2e test
+  "🤖 github actions":
+    color: 0052CC
+    description: ''
+  "🧬 refactor":
+    color: 193DF9
+    description: Refactoring code (includes source code, testing code, etc)
+  "🪲 bug":
+    color: d73a4a
+    description: Something isn't working
